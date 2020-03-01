@@ -165,7 +165,7 @@
         controller: "{{ controllers.results[item|int].instance.ipv4 }}"
         avi_credentials: "{{ avi_credentials }}"
         avi_api_update_method: patch
-        avi_api_patch_op: replace
+        avi_api_patch_op: add
         name: Default-Cloud
         vcenter_configuration:
           management_network: "/api/vimgrnwruntime/?name={{ mgmt_network }}"
