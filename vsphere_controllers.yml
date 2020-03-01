@@ -145,28 +145,17 @@
       with_sequence: start=0 end={{ pod_count - 1 }}
 
     - name: VMware Cloud Connector Facts
-      set_fact:
-        avi_config_cloud:
-          cloud:
-            - name: Default-Cloud
-              vtype: CLOUD_VCENTER
-              dhcp_enabled: true
-              vcenter_configuration:
-                username: "{{ vcenter_user }}"
-                password: "{{ vcenter_password }}"
-                datacenter: "{{ dc }}"
-                management_network: "/api/vimgrnwruntime/?name={{ mgmt_network }}"
-                privilege: "WRITE_ACCESS"
-                vcenter_url: "{{ vcenter_host }}"
-
-    - name: VMware Cloud Connector Setup
-      import_role:
-        name: avinetworks.aviconfig
-      vars:
-        avi_credentials:
-          controller: "{{ controllers.results[item|int].instance.ipv4 }}"
-          username: "{{ avi_credentials.username }}"
-          password: "{{ avi_credentials.password }}"
-          api_version: "{{ avi_credentials.api_version }}"
-        avi_config: "{{ avi_config_cloud }}"
+      avi_systemconfiguration:
+        controller: "{{ controllers.results[item|int].instance.ipv4 }}"
+        avi_credentials: "{{ avi_credentials }}"
+        name: Default-Cloud
+        vtype: CLOUD_VCENTER
+        dhcp_enabled: true
+        vcenter_configuration:
+          username: "{{ vcenter_user }}"
+          password: "{{ vcenter_password }}"
+          datacenter: "{{ dc }}"
+          management_network: "/api/vimgrnwruntime/?name={{ mgmt_network }}"
+          privilege: "WRITE_ACCESS"
+          vcenter_url: "{{ vcenter_host }}"
       with_sequence: start=0 end={{ pod_count - 1 }}
