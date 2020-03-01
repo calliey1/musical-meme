@@ -71,13 +71,21 @@
     - debug:
         msg: "Jumphost IP: {{ jumpbox.instance.ipv4 }}"
     - debug:
-        msg: "Web Servers"
-    - debug:
         msg: "{{ webservers.results[item|int].instance.hw_name }} {{ webservers.results[item|int].instance.ipv4 }}"
       with_sequence: start=0 end={{ webserver_count - 1 }}
     - debug:
-        msg: "Controllers"
-    - debug:
         msg: "{{ controllers.results[item|int].instance.hw_name }} {{ controllers.results[item|int].instance.ipv4 }}"
       with_sequence: start=0 end={{ pod_count - 1 }}
-    - debug:
+
+    - lineinfile:
+        path: inventory
+        line: "{{ wjumpbox.instance.hw_name }} {{ jumpbox.instance.ipv4 }}"
+        create: yes
+    - lineinfile:
+        path: inventory
+        line: "{{ webservers.results[item|int].instance.hw_name }} {{ webservers.results[item|int].instance.ipv4 }}"
+      with_sequence: start=0 end={{ pod_count - 1 }}
+    - lineinfile:
+        path: inventory
+        line: "{{ controllers.results[item|int].instance.hw_name }} {{ controllers.results[item|int].instance.ipv4 }}"
+      with_sequence: start=0 end={{ pod_count - 1 }}
