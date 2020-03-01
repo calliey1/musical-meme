@@ -91,3 +91,55 @@
         path: inventory
         line: "{{ controllers.results[item|int].instance.hw_name }} {{ controllers.results[item|int].instance.ipv4 }}"
       with_sequence: start=0 end={{ pod_count - 1 }}
+
+    - name: "Wait for the portal to become active"
+      uri:
+        url: "https://{{ controllers.results[item|int].instance.ipv4 }}/api/initial-data"
+        validate_certs: no
+        status_code: 200
+      register: result
+      until: result.status == 200
+      retries: 600
+      delay: 10
+      with_sequence: start=0 end={{ pod_count - 1 }}
+
+    - name: Prepare Avi credentials
+      set_fact:
+        avi_credentials: {}
+
+    - name: Prepare Avi credentials
+      set_fact:
+        avi_credentials: "{{ avi_credentials | combine({ item.key: item.value }) }}"
+      with_items:
+      - { key: 'password', value: "{{ avi_admin_password }}" }
+      - { key: 'api_version', value: "{{ result.results[0]['json']['version']['Version'] }}" }
+      - { key: 'username', value: "admin" }
+
+    - name: Update admin user account if required
+      avi_useraccount:
+        controller: "{{ controllers.results[item|int].instance.ipv4 }}"
+        avi_credentials: "{{ avi_credentials }}"
+        old_password: "{{ avi_default_password }}"
+      ignore_errors: yes
+      with_sequence: start=0 end={{ pod_count - 1 }}
+
+    - name: Basic system configuration
+      avi_systemconfiguration:
+        controller: "{{ controllers.results[item|int].instance.ipv4 }}"
+        avi_credentials: "{{ avi_credentials }}"
+        welcome_workflow_complete: true
+        dns_configuration:
+          server_list:
+            - addr: "{{ dns_server }}"
+              type: V4
+        ntp_configuration:
+          ntp_server_list:
+            - addr: 0.pool.ntp.org
+              type: DNS
+            - addr: 1.pool.ntp.org
+              type: DNS
+            - addr: 2.pool.ntp.org
+              type: DNS
+            - addr: 3.pool.ntp.org
+              type: DNS
+      with_sequence: start=0 end={{ pod_count - 1 }}
