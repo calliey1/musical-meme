@@ -2,6 +2,8 @@
   connection: local
   roles:
     - { role: avinetworks.avicontroller_vmware }
+  serial: 3
+  gather_facts: True
   tasks:
     - name: "Create a VM {{ id }} folder on given datacenter"
       vcenter_folder:
