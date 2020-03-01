@@ -167,6 +167,7 @@
         avi_api_update_method: patch
         avi_api_patch_op: add
         name: Default-Cloud
+        vtype: CLOUD_VCENTER
         vcenter_configuration:
           management_network: "/api/vimgrnwruntime/?name={{ mgmt_network }}"
       with_sequence: start=0 end={{ pod_count - 1 }}
