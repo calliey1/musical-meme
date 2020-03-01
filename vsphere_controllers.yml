@@ -3,7 +3,7 @@
   roles:
     - { role: avinetworks.avicontroller_vmware }
   tasks:
-    - name: Create a VM folder on given datacenter
+    - name: "Create a VM {{ id }} folder on given datacenter"
       vcenter_folder:
         hostname: '{{ vcenter_host }}'
         username: '{{ vcenter_user }}'
@@ -14,13 +14,14 @@
         folder_type: vm
         state: present
       delegate_to: localhost
-    - name: Clone Web Server Template
+
+    - name: "Create VM {{ id }}_webserver{{ item }} from Windows Server Template"
       vmware_guest:
         hostname: '{{ vcenter_host }}'
         username: '{{ vcenter_user }}'
         password: '{{ vcenter_password }}'
         validate_certs: False
-        name: "{{ id }}_server{{ item }}"
+        name: "{{ id }}_webserver{{ item }}"
         template: "{{ server_template }}"
         datacenter: "{{ dc }}"
         folder: "{{ id }}"
@@ -28,10 +29,10 @@
         - name: "{{ server_network }}"
         state: poweredon
         wait_for_ip_address: yes
-      with_sequence: count={{ server_count }}
+      with_sequence: count={{ webserver_count }}
       register: web_servers
 
-    - name: Clone Windows Server Template
+    - name: "Create VM {{ id }}_winserver{{ item }} from Windows Server Template"
       vmware_guest:
         hostname: '{{ vcenter_host }}'
         username: '{{ vcenter_user }}'
@@ -48,7 +49,8 @@
         wait_for_ip_address: yes
       with_sequence: count={{ winserver_count }}
       register: windows_servers
-    - name: Clone Avi Controller Template
+
+    - name: "Create VM {{ id }}_controller{{ item }} from Avi Controller Template"
       vmware_guest:
         hostname: '{{ vcenter_host }}'
         username: '{{ vcenter_user }}'
