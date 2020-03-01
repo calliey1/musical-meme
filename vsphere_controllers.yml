@@ -23,7 +23,7 @@
         username: '{{ vcenter_user }}'
         password: '{{ vcenter_password }}'
         validate_certs: False
-        name: "{{ id }}_jumpbox{{ item }}"
+        name: "{{ id }}_jumpbox"
         template: "{{ server_template }}"
         datacenter: "{{ dc }}"
         folder: "{{ id }}"
