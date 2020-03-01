@@ -29,7 +29,7 @@
         networks:
         - name: "{{ mgmt_network }}"
         - name: "{{ server_network }}"
-        state: poweredon
+        state: '{{ state | default("poweredon")}}'
         wait_for_ip_address: yes
       delegate_to: localhost
       register: jumpbox
@@ -46,7 +46,7 @@
         folder: "{{ id }}"
         networks:
         - name: "{{ server_network }}"
-        state: poweredon
+        state: '{{ state | default("poweredon")}}'
         wait_for_ip_address: yes
       with_sequence: count={{ webserver_count }}
       delegate_to: localhost
@@ -64,7 +64,7 @@
         folder: "{{ id }}"
         networks:
         - name: "{{ mgmt_network }}"
-        state: poweredon
+        state: '{{ state | default("poweredon")}}'
         wait_for_ip_address: yes
       with_sequence: count={{ pod_count }}
       delegate_to: localhost
