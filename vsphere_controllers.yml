@@ -69,7 +69,7 @@
       register: controllers
 
     - debug:
-        msg: "Jumphost IP: {{ jumpbox.ipv4 }}"
+        msg: "Jumphost IP: {{ jumpbox.instance.ipv4 }}"
     - debug:
         msg: "Web Servers"
     - debug:
