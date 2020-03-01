@@ -15,7 +15,7 @@
         state: present
       delegate_to: localhost
 
-    - name: "Create VM from Windows Server Template"
+    - name: "Create VM from Web Server Template"
       vmware_guest:
         hostname: '{{ vcenter_host }}'
         username: '{{ vcenter_user }}'
