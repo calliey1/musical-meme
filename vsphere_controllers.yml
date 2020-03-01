@@ -70,16 +70,13 @@
 
     - debug:
         msg: "Jumphost IP: {{ jumpbox.instance.ipv4 }}"
-      when: jumpbox
     - debug:
         msg: "Web Servers"
     - debug:
         msg: "{{ item.instance.hw_name }} {{ item.instance.ipv4 }}"
-      loop: webservers.results
-      when: webservers
+      loop: webservers
     - debug:
         msg: "Controllers"
     - debug:
         msg: "{{ item.instance.hw_name }} {{ item.instance.ipv4 }}"
-      loop: controllers.results
-      when: controllers
+      loop: controllers
