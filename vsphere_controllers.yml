@@ -24,6 +24,8 @@
         template: "{{ server_template }}"
         datacenter: "{{ dc }}"
         folder: "{{ id }}"
+        networks:
+        - "{{ server_network }}"
         state: poweredon
       with_sequence: count={{ server_count }}
     - name: Clone Windows Server Template
@@ -36,6 +38,9 @@
         template: "{{ windows_template }}"
         datacenter: "{{ dc }}"
         folder: "{{ id }}"
+        networks:
+        - "{{ mgmt_network }}"
+        - "{{ server_network }}"
         state: poweredon
       with_sequence: count={{ winserver_count }}
     - name: Clone Avi Controller Template
@@ -58,7 +63,7 @@
     #     vcenter_password: "{{ vcenter_password }}"
     #     con_datacenter: "{{ dc }}"
     #     con_cluster: "{{ cluster }}"
-    #     con_mgmt_network: "{{ network }}"
+    #     con_mgmt_network: "{{ mgmt_network }}"
     #     con_datastore: "{{ datastore }}"
     #     con_ova_path: "{{ ova_path }}"
     #     con_vm_name: "{{ id }}_controller{{ item }}"
