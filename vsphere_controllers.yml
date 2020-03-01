@@ -25,9 +25,12 @@
         datacenter: "{{ dc }}"
         folder: "{{ id }}"
         networks:
-        - "{{ server_network }}"
+        - name: "{{ server_network }}"
         state: poweredon
+        wait_for_ip_address: yes
       with_sequence: count={{ server_count }}
+      register: web_servers
+
     - name: Clone Windows Server Template
       vmware_guest:
         hostname: '{{ vcenter_host }}'
@@ -39,10 +42,12 @@
         datacenter: "{{ dc }}"
         folder: "{{ id }}"
         networks:
-        - "{{ mgmt_network }}"
-        - "{{ server_network }}"
+        - name: "{{ mgmt_network }}"
+        - name: "{{ server_network }}"
         state: poweredon
+        wait_for_ip_address: yes
       with_sequence: count={{ winserver_count }}
+      register: windows_servers
     - name: Clone Avi Controller Template
       vmware_guest:
         hostname: '{{ vcenter_host }}'
@@ -54,7 +59,20 @@
         datacenter: "{{ dc }}"
         folder: "{{ id }}"
         state: poweredon
+        wait_for_ip_address: yes
       with_sequence: count={{ pod_count }}
+      register: controllers
+    - debug:
+        msg: "{{ web_servers.results }}"
+    - debug:
+        msg: "{{ windows_servers.results }}"
+    - debug:
+        msg: "{{ controllers.results }}"
+
+
+
+
+
     # - name: Deploy Avi Controllers
     #   deploy_controller:
     #     ovftool_path: /usr/lib/vmware-ovftool
