@@ -1,0 +1,42 @@
+- hosts: localhost
+  connection: local
+  roles:
+    - { role: avinetworks.avicontroller_vmware }
+  tasks:
+    - name: Create a VM folder on given datacenter
+      vcenter_folder:
+        hostname: '{{ vcenter_host }}'
+        username: '{{ vcenter_user }}'
+        password: '{{ vcenter_password }}'
+        validate_certs: False
+        datacenter_name: "{{ dc }}"
+        folder_name: "{{ id }}"
+        folder_type: vm
+        state: present
+      delegate_to: localhost
+    - name: Clone the template
+      vmware_guest:
+        hostname: '{{ vcenter_host }}'
+        username: '{{ vcenter_user }}'
+        password: '{{ vcenter_password }}'
+        validate_certs: False
+        name: "{{ id }}_server{{ item }}"
+        template: "{{ server_template }}"
+        datacenter: "{{ dc }}"
+        folder: "{{ id }}"
+        state: poweredon
+      with_sequence: count={{ server_count }}
+    - name: Deploy Avi Controllers
+      deploy_controller:
+        ovftool_path: /usr/lib/vmware-ovftool
+        vcenter_host: "{{ vcenter_host }}"
+        vcenter_user: "{{ vcenter_user }}"
+        vcenter_password: "{{ vcenter_password }}"
+        con_datacenter: "{{ dc }}"
+        con_cluster: "{{ cluster }}"
+        con_mgmt_network: "{{ network }}"
+        con_ova_path: "{{ ova_path }}"
+        con_vm_name: "{{ id }}_controller{{ item }}"
+        con_power_on: true
+        con_vcenter_folder: "{{ id }}"
+      with_sequence: count={{ pod_count }}
