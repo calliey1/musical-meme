@@ -17,6 +17,23 @@
         state: present
       delegate_to: localhost
 
+    - name: "Create VM from Server Template"
+      vmware_guest:
+        hostname: '{{ vcenter_host }}'
+        username: '{{ vcenter_user }}'
+        password: '{{ vcenter_password }}'
+        validate_certs: False
+        name: "{{ id }}_jumpbox{{ item }}"
+        template: "{{ server_template }}"
+        datacenter: "{{ dc }}"
+        folder: "{{ id }}"
+        networks:
+        - name: "{{ mgmt_network }}"
+        - name: "{{ server_network }}"
+        state: poweredon
+        wait_for_ip_address: yes
+      register: jumpbox
+
     - name: "Create VM from Web Server Template"
       vmware_guest:
         hostname: '{{ vcenter_host }}'
@@ -32,25 +49,7 @@
         state: poweredon
         wait_for_ip_address: yes
       with_sequence: count={{ webserver_count }}
-      register: web_servers
-
-    - name: "Create VM from Windows Server Template"
-      vmware_guest:
-        hostname: '{{ vcenter_host }}'
-        username: '{{ vcenter_user }}'
-        password: '{{ vcenter_password }}'
-        validate_certs: False
-        name: "{{ id }}_winserver{{ item }}"
-        template: "{{ windows_template }}"
-        datacenter: "{{ dc }}"
-        folder: "{{ id }}"
-        networks:
-        - name: "{{ mgmt_network }}"
-        - name: "{{ server_network }}"
-        state: poweredon
-        wait_for_ip_address: yes
-      with_sequence: count={{ winserver_count }}
-      register: windows_servers
+      register: webservers
 
     - name: "Create VM from Avi Controller Template"
       vmware_guest:
@@ -62,31 +61,20 @@
         template: "{{ avi_controller_template }}"
         datacenter: "{{ dc }}"
         folder: "{{ id }}"
+        networks:
+        - name: "{{ mgmt_network }}"
         state: poweredon
         wait_for_ip_address: yes
       with_sequence: count={{ pod_count }}
       register: controllers
 
     - debug:
-        msg: "{{ web_servers.results }}"
+        msg: "Jumphost IP: {{ jumpbox.ipv4 }}"
     - debug:
-        msg: "{{ windows_servers.results }}"
+        msg: "Web Servers"
     - debug:
-        msg: "{{ controllers.results }}"
-
-
-    # - name: Deploy Avi Controllers
-    #   deploy_controller:
-    #     ovftool_path: /usr/lib/vmware-ovftool
-    #     vcenter_host: "{{ vcenter_host }}"
-    #     vcenter_user: "{{ vcenter_user }}"
-    #     vcenter_password: "{{ vcenter_password }}"
-    #     con_datacenter: "{{ dc }}"
-    #     con_cluster: "{{ cluster }}"
-    #     con_mgmt_network: "{{ mgmt_network }}"
-    #     con_datastore: "{{ datastore }}"
-    #     con_ova_path: "{{ ova_path }}"
-    #     con_vm_name: "{{ id }}_controller{{ item }}"
-    #     con_power_on: true
-    #     con_vcenter_folder: "{{ id }}"
-    #   with_sequence: count={{ pod_count }}
+        msg: "{{ item.instance.hw_name }} {{ item.instance.ipv4 }}"
+      loop: webservers.results
+    - debug:
+        msg: "{{ item.instance.hw_name }} {{ item.instance.ipv4 }}"
+      loop: controllers.results
