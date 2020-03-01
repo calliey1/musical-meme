@@ -2,7 +2,6 @@
   connection: local
   roles:
     - { role: avinetworks.avicontroller_vmware }
-  serial: 3
   gather_facts: True
   tasks:
     - name: "Create a VM {{ id }} folder on given datacenter"
@@ -32,6 +31,7 @@
         - name: "{{ server_network }}"
         state: poweredon
         wait_for_ip_address: yes
+      delegate_to: localhost
       register: jumpbox
 
     - name: "Create VM from Web Server Template"
@@ -49,6 +49,7 @@
         state: poweredon
         wait_for_ip_address: yes
       with_sequence: count={{ webserver_count }}
+      delegate_to: localhost
       register: webservers
 
     - name: "Create VM from Avi Controller Template"
@@ -66,6 +67,7 @@
         state: poweredon
         wait_for_ip_address: yes
       with_sequence: count={{ pod_count }}
+      delegate_to: localhost
       register: controllers
 
     - debug:
@@ -79,7 +81,7 @@
 
     - lineinfile:
         path: inventory
-        line: "{{ wjumpbox.instance.hw_name }} {{ jumpbox.instance.ipv4 }}"
+        line: "{{ jumpbox.instance.hw_name }} {{ jumpbox.instance.ipv4 }}"
         create: yes
     - lineinfile:
         path: inventory
