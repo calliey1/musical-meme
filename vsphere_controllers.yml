@@ -86,7 +86,7 @@
     - lineinfile:
         path: inventory
         line: "{{ webservers.results[item|int].instance.hw_name }} {{ webservers.results[item|int].instance.ipv4 }}"
-      with_sequence: start=0 end={{ pod_count - 1 }}
+      with_sequence: start=0 end={{ webserver_count - 1 }}
     - lineinfile:
         path: inventory
         line: "{{ controllers.results[item|int].instance.hw_name }} {{ controllers.results[item|int].instance.ipv4 }}"
