@@ -73,10 +73,10 @@
     - debug:
         msg: "Web Servers"
     - debug:
-        msg: "{{ item.instance.hw_name }} {{ item.instance.ipv4 }}"
-      with_items: webservers.results
+        msg: "{{ webservers.results[item|int].instance.hw_name }} {{ webservers.results[item|int].instance.ipv4 }}"
+      with_sequence: count={{ webserver_count }}
     - debug:
         msg: "Controllers"
     - debug:
-        msg: "{{ item.instance.hw_name }} {{ item.instance.ipv4 }}"
-      with_items: controllers
+        msg: "{{ controllers.results[item|int].instance.hw_name }} {{ controllers.results[item|int].instance.ipv4 }}"
+      with_sequence: count={{ pod_count }}
