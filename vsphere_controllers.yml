@@ -76,5 +76,7 @@
         msg: "{{ item.instance.hw_name }} {{ item.instance.ipv4 }}"
       loop: webservers.results
     - debug:
+        msg: "Controllers"
+    - debug:
         msg: "{{ item.instance.hw_name }} {{ item.instance.ipv4 }}"
       loop: controllers.results
