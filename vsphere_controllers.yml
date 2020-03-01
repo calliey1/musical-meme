@@ -35,6 +35,7 @@
         con_datacenter: "{{ dc }}"
         con_cluster: "{{ cluster }}"
         con_mgmt_network: "{{ network }}"
+        con_datastore: "{{ datastore }}"
         con_ova_path: "{{ ova_path }}"
         con_vm_name: "{{ id }}_controller{{ item }}"
         con_power_on: true
