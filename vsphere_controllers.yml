@@ -15,7 +15,7 @@
         state: present
       delegate_to: localhost
 
-    - name: "Create VM {{ id }}_webserver{{ item }} from Windows Server Template"
+    - name: "Create VM from Windows Server Template"
       vmware_guest:
         hostname: '{{ vcenter_host }}'
         username: '{{ vcenter_user }}'
@@ -32,7 +32,7 @@
       with_sequence: count={{ webserver_count }}
       register: web_servers
 
-    - name: "Create VM {{ id }}_winserver{{ item }} from Windows Server Template"
+    - name: "Create VM from Windows Server Template"
       vmware_guest:
         hostname: '{{ vcenter_host }}'
         username: '{{ vcenter_user }}'
@@ -50,7 +50,7 @@
       with_sequence: count={{ winserver_count }}
       register: windows_servers
 
-    - name: "Create VM {{ id }}_controller{{ item }} from Avi Controller Template"
+    - name: "Create VM from Avi Controller Template"
       vmware_guest:
         hostname: '{{ vcenter_host }}'
         username: '{{ vcenter_user }}'
@@ -64,15 +64,13 @@
         wait_for_ip_address: yes
       with_sequence: count={{ pod_count }}
       register: controllers
+
     - debug:
         msg: "{{ web_servers.results }}"
     - debug:
         msg: "{{ windows_servers.results }}"
     - debug:
         msg: "{{ controllers.results }}"
-
-
-
 
 
     # - name: Deploy Avi Controllers
