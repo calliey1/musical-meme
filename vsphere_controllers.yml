@@ -145,7 +145,7 @@
       with_sequence: start=0 end={{ pod_count - 1 }}
 
     - name: VMware Cloud Connector Facts
-      avi_systemconfiguration:
+      avi_cloud:
         controller: "{{ controllers.results[item|int].instance.ipv4 }}"
         avi_credentials: "{{ avi_credentials }}"
         name: Default-Cloud
