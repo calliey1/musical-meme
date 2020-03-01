@@ -14,7 +14,7 @@
         folder_type: vm
         state: present
       delegate_to: localhost
-    - name: Clone the template
+    - name: Clone Web Server Template
       vmware_guest:
         hostname: '{{ vcenter_host }}'
         username: '{{ vcenter_user }}'
@@ -26,18 +26,42 @@
         folder: "{{ id }}"
         state: poweredon
       with_sequence: count={{ server_count }}
-    - name: Deploy Avi Controllers
-      deploy_controller:
-        ovftool_path: /usr/lib/vmware-ovftool
-        vcenter_host: "{{ vcenter_host }}"
-        vcenter_user: "{{ vcenter_user }}"
-        vcenter_password: "{{ vcenter_password }}"
-        con_datacenter: "{{ dc }}"
-        con_cluster: "{{ cluster }}"
-        con_mgmt_network: "{{ network }}"
-        con_datastore: "{{ datastore }}"
-        con_ova_path: "{{ ova_path }}"
-        con_vm_name: "{{ id }}_controller{{ item }}"
-        con_power_on: true
-        con_vcenter_folder: "{{ id }}"
+    - name: Clone Windows Server Template
+      vmware_guest:
+        hostname: '{{ vcenter_host }}'
+        username: '{{ vcenter_user }}'
+        password: '{{ vcenter_password }}'
+        validate_certs: False
+        name: "{{ id }}_winserver{{ item }}"
+        template: "{{ windows_template }}"
+        datacenter: "{{ dc }}"
+        folder: "{{ id }}"
+        state: poweredon
+      with_sequence: count={{ winserver_count }}
+    - name: Clone Avi Controller Template
+      vmware_guest:
+        hostname: '{{ vcenter_host }}'
+        username: '{{ vcenter_user }}'
+        password: '{{ vcenter_password }}'
+        validate_certs: False
+        name: "{{ id }}_controller{{ item }}"
+        template: "{{ avi_controller_template }}"
+        datacenter: "{{ dc }}"
+        folder: "{{ id }}"
+        state: poweredon
       with_sequence: count={{ pod_count }}
+    # - name: Deploy Avi Controllers
+    #   deploy_controller:
+    #     ovftool_path: /usr/lib/vmware-ovftool
+    #     vcenter_host: "{{ vcenter_host }}"
+    #     vcenter_user: "{{ vcenter_user }}"
+    #     vcenter_password: "{{ vcenter_password }}"
+    #     con_datacenter: "{{ dc }}"
+    #     con_cluster: "{{ cluster }}"
+    #     con_mgmt_network: "{{ network }}"
+    #     con_datastore: "{{ datastore }}"
+    #     con_ova_path: "{{ ova_path }}"
+    #     con_vm_name: "{{ id }}_controller{{ item }}"
+    #     con_power_on: true
+    #     con_vcenter_folder: "{{ id }}"
+    #   with_sequence: count={{ pod_count }}
