@@ -80,7 +80,7 @@
       with_sequence: start=0 end={{ pod_count - 1 }}
 
     - lineinfile:
-        path: inventory
+        path: "{{ id }}-inventory"
         line: "{{ jumpbox.instance.hw_name }} {{ jumpbox.instance.ipv4 }}"
         create: yes
     - lineinfile:
