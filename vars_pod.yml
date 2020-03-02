@@ -1,4 +1,4 @@
-id: psoenable
+id: testpod
 pod_count: 1
 webserver_count: 1
 vcenter_host: "wdc-06-vc10.oc.vmware.com"
