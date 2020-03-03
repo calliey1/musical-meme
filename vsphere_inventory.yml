@@ -2,16 +2,35 @@
   connection: local
   gather_facts: True
   tasks:
-    - name: "vm_guest_info collection for {{ vm_name }}"
-      vmware_guest_info:
+    # - name: "vm_guest_info collection for {{ vm_name }}"
+    #   vmware_guest_info:
+    #     hostname: '{{ vcenter_host }}'
+    #     username: '{{ vcenter_user }}'
+    #     password: '{{ vcenter_password }}'
+    #     validate_certs: False
+    #     datacenter: "{{ dc }}"
+    #     name: "{{ vm_name }}"
+    #     schema: "vsphere"
+    #   delegate_to: localhost
+    #   register: vm_info
+    # - debug:
+    #     var: vm_info
+    - name: "Create VM from Server Template"
+      vmware_guest:
         hostname: '{{ vcenter_host }}'
         username: '{{ vcenter_user }}'
         password: '{{ vcenter_password }}'
         validate_certs: False
+        name: "{{ id }}_jumpbox"
+        template: "{{ server_template }}"
         datacenter: "{{ dc }}"
-        name: "{{ vm_name }}"
-        schema: "vsphere"
+        folder: "{{ id }}"
+        networks:
+        - name: "{{ mgmt_network }}"
+        - name: "{{ server_network }}"
+        state: '{{ state | default("poweredon")}}'
+        wait_for_ip_address: yes
       delegate_to: localhost
-      register: vm_info
+      register: jumpbox
     - debug:
-        var: vm_info
+        var: jumpbox.instance
