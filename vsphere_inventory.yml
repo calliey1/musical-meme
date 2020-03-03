@@ -15,34 +15,34 @@
     #   register: guest_info
     # - debug:
     #     var: guest_info
-    - name: "vm_info collection for {{ vm_name }}"
-      vmware_vm_info:
-        hostname: '{{ vcenter_host }}'
-        username: '{{ vcenter_user }}'
-        password: '{{ vcenter_password }}'
-        validate_certs: False
-        vm_type: vm
-        name: "{{ vm_name }}"
-      delegate_to: localhost
-      register: vm_info
-    - debug:
-        var: vm_info
-    # - name: "Create VM from Server Template"
-    #   vmware_guest:
+    # - name: "vm_info collection for {{ vm_name }}"
+    #   vmware_vm_info:
     #     hostname: '{{ vcenter_host }}'
     #     username: '{{ vcenter_user }}'
     #     password: '{{ vcenter_password }}'
     #     validate_certs: False
-    #     name: "{{ id }}_jumpbox"
-    #     template: "{{ server_template }}"
-    #     datacenter: "{{ dc }}"
-    #     folder: "{{ id }}"
-    #     networks:
-    #     - name: "{{ mgmt_network }}"
-    #     - name: "{{ server_network }}"
-    #     state: '{{ state | default("poweredon")}}'
-    #     wait_for_ip_address: yes
+    #     vm_type: vm
+    #     name: "{{ vm_name }}"
     #   delegate_to: localhost
-    #   register: jumpbox
+    #   register: vm_info
     # - debug:
-    #     var: jumpbox.instance
+    #     var: vm_info
+    - name: "Create VM from Server Template"
+      vmware_guest:
+        hostname: '{{ vcenter_host }}'
+        username: '{{ vcenter_user }}'
+        password: '{{ vcenter_password }}'
+        validate_certs: False
+        name: "{{ id }}_jumpbox"
+        template: "{{ server_template }}"
+        datacenter: "{{ dc }}"
+        folder: "{{ id }}"
+        networks:
+        - name: "{{ mgmt_network }}"
+        - name: "{{ server_network }}"
+        state: '{{ state | default("poweredon")}}'
+        wait_for_ip_address: yes
+      delegate_to: localhost
+      register: jumpbox
+    - debug:
+        var: jumpbox.instance
