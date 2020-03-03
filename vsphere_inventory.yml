@@ -1,0 +1,18 @@
+- hosts: localhost
+  connection: local
+  gather_facts: True
+  tasks:
+    - name: "vm_guest_info collection for {{ vm_name }}"
+      vmware_guest_info:
+        hostname: '{{ vcenter_host }}'
+        username: '{{ vcenter_user }}'
+        password: '{{ vcenter_password }}'
+        validate_certs: False
+        datacenter_name: "{{ dc }}"
+        name: "{{ vm_name }}"
+        schema: "vsphere"
+        state: present
+      delegate_to: localhost
+      register: vm_info
+    - debug:
+        var: vm_info
