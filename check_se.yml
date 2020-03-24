@@ -1,0 +1,32 @@
+---
+- debug:
+    msg: "Checking SE:{{ item }}"
+- name: Is SE added?
+  avi_api_session:
+    controller: "{{ controller  }}"
+    avi_credentials: "{{ avi_credentials }}"
+    http_method: get
+    path: serviceengine
+    params:
+      name: "{{ item }}"
+  register: result
+  #Wait a max of 10 minutes for the SE to come up
+  until: result.obj.results | length > 0
+  retries: 20
+  delay: 30
+  become: no
+- name: Is SE operational?
+  avi_api_session:
+    controller: "{{ controller  }}"
+    avi_credentials: "{{ avi_credentials }}"
+    http_method: get
+    path: serviceengine
+    params:
+      name: "{{ item }}"
+  register: result
+  #Wait a max of 5 minutes for SE state to be connected
+  until: result.obj.results[0]["se_connected"] == true
+  #until: result.obj.results[0][""enable_state"] == 'SE_STATE_ENABLED'
+  retries: 20
+  delay: 15
+  become: no
