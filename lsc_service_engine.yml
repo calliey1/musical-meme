@@ -1,0 +1,67 @@
+- hosts: all
+  tasks: 
+    - name: Setup SSH keys for cloud conenctor user
+      shell: 'curl -ks https://{{controller}}/api/linux_host_install?username={{cloud_user}} | sudo bash'
+      args:
+        warn: false
+- hosts: localhost
+  connection: local
+  roles:
+    - role: avinetworks.avisdk
+  tasks:
+    #Avi Controller configuration
+    - name: "Wait for the portal to become active"
+      uri:
+        url: 'https://{{ controller }}/api/initial-data'
+        validate_certs: no
+        status_code: 200
+      register: result
+      until: result.status == 200
+      retries: 600
+      delay: 10
+    - name: Prepare Avi credentials
+      set_fact:
+        avi_credentials: {}
+    - name: Prepare Avi credentials
+      set_fact:
+        avi_credentials: "{{ avi_credentials | combine({ item.key: item.value }) }}"
+      with_items:
+      - { key: 'password', value: "{{ avi_admin_password }}" }
+      - { key: 'api_version', value: "{{ result['json']['version']['Version'] }}" }
+      - { key: 'username', value: "admin" }      
+    - debug:
+         var: avi_credentials   
+    - debug:
+         var: item
+      with_items: "{{ hostvars[inventory_hostname]['groups']['all'] }}"  
+    - name: Add SEs to cloud connector
+      avi_cloud:
+        controller: "{{ controller  }}"
+        avi_credentials: "{{ avi_credentials }}"
+        name: "{{ linux_cloud_name  }}"
+        vtype: CLOUD_LINUXSERVER
+        avi_api_update_method: patch
+        avi_api_patch_op: add
+        linuxserver_configuration:
+          se_sys_disk_size_GB: 10
+          se_log_disk_size_GB: 5
+          se_inband_mgmt: false
+          hosts:
+            - host_attr:
+              - attr_key: CPU
+                attr_val: All
+              - attr_key: MEMORY
+                attr_val: All
+              - attr_key: DPDK
+                attr_val: 'No'
+              - attr_key: SE_INBAND_MGMT
+                attr_val: 'False'
+              se_group_ref: "/api/serviceenginegroup?name={{ seg_name }}"
+              host_ip:
+                type: V4
+                addr: "{{ item }}"
+      with_items: "{{ hostvars[inventory_hostname]['groups']['all'] }}"
+      become: no
+    #Wait until SEs are added and operational
+    - include_tasks: check_se.yml
+      with_items: "{{ hostvars[inventory_hostname]['groups']['all'] }}"
