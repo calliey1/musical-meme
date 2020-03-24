@@ -1,0 +1,197 @@
+- hosts: localhost
+  connection: local
+  roles:
+    - { role: avinetworks.avicontroller_vmware }
+  gather_facts: True
+  tasks:
+    - name: "Create a VM {{ id }} folder on given datacenter"
+      vcenter_folder:
+        hostname: '{{ vcenter_host }}'
+        username: '{{ vcenter_user }}'
+        password: '{{ vcenter_password }}'
+        validate_certs: False
+        datacenter_name: "{{ dc }}"
+        folder_name: "{{ id }}"
+        folder_type: vm
+        state: present
+      delegate_to: localhost
+
+    - name: "Create VM from Web Server Template"
+      vmware_guest:
+        hostname: '{{ vcenter_host }}'
+        username: '{{ vcenter_user }}'
+        password: '{{ vcenter_password }}'
+        validate_certs: False
+        name: "{{ id }}_webserver{{ item }}"
+        template: "{{ server_template }}"
+        datacenter: "{{ dc }}"
+        folder: "{{ id }}"
+        networks:
+        - name: "{{ server_network }}"
+        state: '{{ state | default("poweredon")}}'
+        wait_for_ip_address: yes
+      with_sequence: count={{ webserver_count }}
+      delegate_to: localhost
+      register: webservers
+
+    - name: "Create VM from Avi Controller Template"
+      vmware_guest:
+        hostname: '{{ vcenter_host }}'
+        username: '{{ vcenter_user }}'
+        password: '{{ vcenter_password }}'
+        validate_certs: False
+        name: "{{ id }}_controller{{ item }}"
+        template: "{{ avi_controller_template }}"
+        datacenter: "{{ dc }}"
+        folder: "{{ id }}"
+        networks:
+        - name: "{{ mgmt_network }}"
+        state: '{{ state | default("poweredon")}}'
+        wait_for_ip_address: yes
+      with_sequence: count={{ pod_count }}
+      delegate_to: localhost
+      register: controllers
+
+    - name: "Create VM from Avi SE Template"
+      vmware_guest:
+        hostname: '{{ vcenter_host }}'
+        username: '{{ vcenter_user }}'
+        password: '{{ vcenter_password }}'
+        validate_certs: False
+        name: "{{ id }}_se{{ item }}"
+        template: "{{ se_template }}"
+        datacenter: "{{ dc }}"
+        folder: "{{ id }}"
+        disk:
+        - size_gb: 20
+          datastore: "{{ datastore  }}"
+        hardware:
+          memory_mb: 4096
+          num_cpus: 2
+        networks:
+        - name: "{{ mgmt_network }}"
+        - name: "{{ se_network  }}"
+        state: '{{ state | default("poweredon")}}'
+        wait_for_ip_address: yes
+      with_sequence: count={{ se_count }}
+      delegate_to: localhost
+      register: service_engines
+    #Display VM info
+    - debug:
+        msg: "{{ webservers.results[item|int].instance.hw_name }} {{ webservers.results[item|int].instance.ipv4 }}"
+      with_sequence: start=0 end={{ webserver_count - 1 }}
+    - debug:
+        msg: "{{ controllers.results[item|int].instance.hw_name }} {{ controllers.results[item|int].instance.ipv4 }}"
+      with_sequence: start=0 end={{ pod_count - 1 }}
+    - name: Last debug
+      debug: 
+        msg: "{{ service_engines.results[item|int].instance.hw_name }} {{ service_engines.results[item|int].instance.ipv4 }}"
+      with_sequence: start=0 end={{ se_count - 1 }}
+
+    #Create inventory files
+    - file:
+        path: "{{ id }}-inventory"
+        state: absent
+    - lineinfile:
+        path: "{{ id }}-inventory"
+        line: "{{ webservers.results[item|int].instance.hw_name }} {{ webservers.results[item|int].instance.ipv4 }}"
+        create: yes
+      with_sequence: start=0 end={{ webserver_count - 1 }}
+    - lineinfile:
+        path: "{{ id }}-inventory"
+        line: "{{ controllers.results[item|int].instance.hw_name }} {{ controllers.results[item|int].instance.ipv4 }}"
+      with_sequence: start=0 end={{ pod_count - 1 }}
+    - file:
+        path: "{{ id }}-se-inventory"
+        state: absent
+    - lineinfile:
+        path: "{{ id }}-se-inventory"
+        line: "{{ service_engines.results[item|int].instance.ipv4 }}" 
+        create: yes
+      with_sequence: start=0 end={{ se_count - 1 }}    
+      #Avi Controller configuration
+    - name: "Wait for the portal to become active"
+      uri:
+        url: "https://{{ controllers.results[item|int].instance.ipv4 }}/api/initial-data"
+        validate_certs: no
+        status_code: 200
+      register: result
+      until: result.status == 200
+      retries: 600
+      delay: 10
+      with_sequence: start=0 end={{ pod_count - 1 }}
+
+    - name: Prepare Avi credentials
+      set_fact:
+        avi_credentials: {}
+
+    - name: Prepare Avi credentials
+      set_fact:
+        avi_credentials: "{{ avi_credentials | combine({ item.key: item.value }) }}"
+      with_items:
+      - { key: 'password', value: "{{ avi_admin_password }}" }
+      - { key: 'api_version', value: "{{ result.results[0]['json']['version']['Version'] }}" }
+      - { key: 'username', value: "admin" }
+
+    - name: Update admin user account if required
+      avi_useraccount:
+        controller: "{{ controllers.results[item|int].instance.ipv4 }}"
+        avi_credentials: "{{ avi_credentials }}"
+        old_password: "{{ avi_default_password }}"
+      ignore_errors: yes
+      with_sequence: start=0 end={{ pod_count - 1 }} 
+    - name: Basic system configuration
+      avi_systemconfiguration:
+        controller: "{{ controllers.results[item|int].instance.ipv4 }}"
+        avi_credentials: "{{ avi_credentials }}"
+        welcome_workflow_complete: true
+        dns_configuration:
+          server_list:
+            - addr: "{{ dns_server }}"
+              type: V4
+        ntp_configuration:
+          ntp_server_list:
+            - addr: 0.pool.ntp.org
+              type: DNS
+            - addr: 1.pool.ntp.org
+              type: DNS
+            - addr: 2.pool.ntp.org
+              type: DNS
+            - addr: 3.pool.ntp.org
+              type: DNS
+      with_sequence: start=0 end={{ pod_count - 1 }}
+    - name: Set SSH user
+      avi_cloudconnectoruser:
+        controller: "{{ controllers.results[item|int].instance.ipv4 }}"
+        avi_credentials: "{{ avi_credentials }}"
+        state: present
+        name: "{{ cloud_user }}"
+      with_sequence: start=0 end={{ pod_count - 1 }}
+      register: userinfo
+    - debug:
+        var: userinfo["obj"]["public_key"]
+    - name: Create Linux server cloud
+      avi_cloud:
+        controller: "{{ controllers.results[item|int].instance.ipv4 }}"
+        avi_credentials: "{{ avi_credentials }}"
+        state: present
+        name: "{{ linux_cloud_name }}"
+        vtype: CLOUD_LINUXSERVER
+        license_type: LIC_SOCKETS
+        linuxserver_configuration:
+          se_inband_mgmt: false
+          ssh_user_ref: "/api/cloudconnectoruser?name={{ cloud_user }}"
+      with_sequence: start=0 end={{ pod_count - 1 }}
+    - name: Create Service Engine Group
+      avi_serviceenginegroup:
+        controller: "{{ controllers.results[item|int].instance.ipv4 }}"
+        avi_credentials: "{{ avi_credentials }}"
+        state: present
+        name: "{{ seg_name }}"
+        cloud_ref: "/api/cloud?name={{ linux_cloud_name }}"
+        ha_mode: HA_MODE_SHARED_PAIR
+        algo: PLACEMENT_ALGO_PACKED
+        max_vs_per_se: 1000
+        min_scaleout_per_vs: 2
+        connection_memory_percentage: 80
+      with_sequence: start=0 end={{ pod_count - 1 }}
